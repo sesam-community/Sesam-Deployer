@@ -1,0 +1,3 @@
+service/tmp*
+service/__pycache__*
+.idea*
