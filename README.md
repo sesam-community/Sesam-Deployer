@@ -11,7 +11,7 @@ Variables file variables-suffix.json. located here: <br>
 
 Script which should be triggered after a merge into a branch on github by azure pipelines. <br>
 
-* ##Environment variables
+* ## Environment variables
 ```
 VAULT_GIT_TOKEN=git_token_used_to_access_vault
 VAULT_MOUNTING_POINT=outer_folder_name/kv2
@@ -31,7 +31,19 @@ GIT_REPOSITORIES=[
 NODE_URL=xyz.sesam.cloud
 NODE_ENV=test
 NODE_JWT=ey...
+
+OPTIONAL:
+
+LOG_LEVEL=WARNING
+SMTP_HOST=probably->smtp.office365.com:587
+SMTP_PASSWORD=pass
+SMTP_USERNAME=user
+SMTP_SENDER=probably_user
+SMTP_RECIPIENTS=["JSON@List.io", "more@recipients.io"]
+SMTP_SUBJECT=something_explanatory
 ```
+
+If you set all the SMTP_* environment variables it will try to send a notification by email if anything goes wrong during deployment.
 
 It can also be used as a docker container though it is not set up to automatically check for changes to the git repository.
 
