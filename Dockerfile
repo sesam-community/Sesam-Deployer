@@ -7,7 +7,7 @@ RUN mkdir -p /service/
 ADD ./requirements.txt /service
 ADD service/deployer.py /service
 ADD service/Vaulter.py /service
-ADD ./sesam-master-node-config/ /service/sesam-master-node-config
+ADD ./$NODE_FOLDER /service/$NODE_FOLDER
 
 WORKDIR /service
 
