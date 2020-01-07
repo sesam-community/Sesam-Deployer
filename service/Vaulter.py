@@ -1,11 +1,11 @@
+from sys import exit
+
 from hvac import Client
 from hvac.exceptions import InvalidPath
 
-from sys import exit
-
 
 class Vaulter:
-    def __init__(self,url,  git_token, mount_point):
+    def __init__(self, url, git_token, mount_point):
         self.client = Client(url=url)
         self.mount_point = mount_point
         self.client.auth.github.login(git_token)
