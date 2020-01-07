@@ -1,18 +1,12 @@
 from json import loads as load_json
-from os import getenv, path, listdir
+from os import getenv
 from re import findall as regex_get_all
 from sys import exit
-import logging
-from shutil import rmtree
-from sesamutils import sesam_logger
 
-
+from Vaulter import Vaulter
 # from git import Repo
 from requests import session as connection
-from Vaulter import Vaulter
-from emailsender import Emailsender
-
-import sesamclient
+from sesamutils import sesam_logger
 
 
 class AppConfig(object):
@@ -23,15 +17,14 @@ config = AppConfig()
 
 LOGGER = sesam_logger('Autodeployer')
 
-
 REQUIRED_ENV_VARS = [
-    'NODE_FOLDERS',
+    'NODE_FOLDER',
     'WHITELIST_PATH',
     'VERIFY_SECRETS', 'UPLOAD_SECRETS',
     'VERIFY_VARIABLES_FROM_FILES', 'UPLOAD_VARIABLES_FROM_FILE',
     'NODE_URL', 'NODE_JWT']
 
-LOAD_ENV_AS_JSON = ['NODE_FOLDERS', 'VERIFY_SECRETS', 'UPLOAD_SECRETS', 'VERIFY_VARIABLES_FROM_FILES']
+LOAD_ENV_AS_JSON = ['VERIFY_SECRETS', 'UPLOAD_SECRETS', 'VERIFY_VARIABLES_FROM_FILES']
 IGNORE_MISSING_ENV = ['VERIFY_SECRETS', 'UPLOAD_SECRETS',
                       'VERIFY_VARIABLES_FROM_FILES', 'UPLOAD_VARIABLES_FROM_FILE']
 
@@ -73,7 +66,8 @@ def do_put(ses, url, json, params=None):
                 LOGGER.info(f'Succesfully PUT request to "{url}"')
                 return 0
             else:
-                LOGGER.warning(f'Could not PUT request to url "{url}". Got response {request.content}. Current try {tries} of {retries}')
+                LOGGER.warning(
+                    f'Could not PUT request to url "{url}". Response:{request.content}. Try {tries} of {retries}')
         LOGGER.critical(f'Each PUT request failed to "{url}".')
         return -1
     except Exception as e:
@@ -104,30 +98,15 @@ def get_node_info(node_path):
             node_secrets += regex_get_all(r'\$SECRET\((\S*?)\)', curfile)
             node_env_vars_in_config += regex_get_all(r'\$ENV\((\S*?)\)', curfile)
             node_config.append(load_json(curfile))
-        except Exception as e:
-            print(e)
+        except FileNotFoundError as e:
+            LOGGER.critical(f'Could not find file {node_path}{filename} in config! Exiting.')
+            exit(-1)
     return node_config, node_secrets, node_env_var_file, node_env_vars_in_config, node_upload_var_file
 
 
-def get_nodes_as_json():
-    node_configs = []
-    node_secrets = []
-    node_env_vars_in_configs = []
-    node_env_vars_in_files = {}
-    node_upload_var_files = {}
-    for folder in config.NODE_FOLDERS:
-        node_config, node_secret, node_env_vars_in_file, node_env_vars_in_config, node_upload_var_file = get_node_info(
-            folder)
-        node_configs += node_config
-        node_secrets += node_secret
-        node_env_vars_in_files.update(node_env_vars_in_file)  # Variables in the variables files used for verification
-        node_env_vars_in_configs += node_env_vars_in_config  # Variables in the configs of the pipes/systems
-        node_upload_var_files.update(node_upload_var_file)  # Variables to be uploaded to node
-    return node_configs, node_secrets, node_env_vars_in_files, node_env_vars_in_configs, node_upload_var_files
-
-
 def verify_node_info():
-    node_config, node_secret, node_env_vars_in_file, node_env_vars_in_config, node_upload_var_file = get_nodes_as_json()
+    node_config, node_secret, node_env_vars_in_file, node_env_vars_in_config, node_upload_var_file = get_node_info(
+        config.NODE_FOLDER)
     secrets_dict = None
     success = True
     if config.VERIFY_SECRETS is True:
@@ -142,7 +121,8 @@ def verify_node_info():
     if config.VERIFY_VARIABLES_FROM_FILES is not None:
         for env_var in node_env_vars_in_config:
             if env_var not in node_env_vars_in_file:
-                LOGGER.critical(f'Missing env var "{env_var}" in node variable file(s) {config.VERIFY_VARIABLES_FROM_FILES}.')
+                LOGGER.critical(
+                    f'Missing env var "{env_var}" in node variable file(s) {config.VERIFY_VARIABLES_FROM_FILES}.')
                 success = False
     if not success:
         LOGGER.critical('Failed to verify environment variables or secrets! Exiting.')
@@ -175,6 +155,7 @@ def deploy_to_node(node_config, secret, variables):
 def main():
     node_config, secrets_dict, node_upload_var_file = verify_node_info()
     deploy_to_node(node_config, secrets_dict, node_upload_var_file)
+    LOGGER.info('Successfully deployed!')
 
 
 if __name__ == '__main__':
