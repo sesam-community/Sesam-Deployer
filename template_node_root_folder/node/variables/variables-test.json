@@ -1,0 +1,7 @@
+{
+  "EXTRA_NODE_GIT_REPO": "<SSH eller HTTP URL>",
+  "VAULT_MOUNTING_POINT": "sesam/kv2",
+  "VAULT_URL": "https://vault.<organization>.io",
+  "watcher-image": "sesam-community/github-autodeployer:2.0.0",
+  "master-endpoint": "https://<node>.sesam.cloud"
+}

@@ -1,0 +1,8 @@
+node-metadata.conf.json
+systems/extra-node-watcher.conf.json
+pipes/eidsiva-kundebehandler.conf.json
+pipes/eidsiva-kunder.conf.json
+pipes/eidsiva-meter.conf.json
+pipes/global-kunde.conf.json
+pipes/kunde-ifs.conf.json
+pipes/kundebehandlinger-cab.conf.json
