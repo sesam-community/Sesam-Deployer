@@ -53,6 +53,7 @@ class Node:
                         care_about_this_file = self.name == 'master'  # if master True if other False
 
                 if care_about_this_file:
+                    self.LOGGER.info(dump_json(curfile, indent=2))
                     self.conf.append(curfile)
 
                     # Tests to add pipe flows to node. {<pipe_name> : {source: str, sink: str}}

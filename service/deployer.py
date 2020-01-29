@@ -119,11 +119,13 @@ def main():
         verify_variables_from_files = [variables_filename]
         whitelist_filename = f'deployment/whitelist-{env}.txt'
         name = 'master'
-    elif env == 'CI':
+    elif env == 'ci':
         variables_filename = f'test-env.json'
         whitelist_filename = f'deployment/whitelist-master.txt'
         verify_variables_from_files = ['variables/variables-test.json', 'variables/variables-prod.json']
         name = None
+    else:
+        LOGGER.critical(f'Environment "{env}" is not test, prod or test')
     master_node = Node(path=path, name=None, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
@@ -135,7 +137,7 @@ def main():
                         git_token=config.VAULT_GIT_TOKEN,
                         mount_point=config.VAULT_MOUNTING_POINT)
 
-    if getenv("EXTRA_NODES", None) is not None and name is not None:
+    if getenv("EXTRA_NODES", None) is not None and env != 'ci':
         for extra_node in config.EXTRA_NODES:
             current_xtra_node = Node(path=path, name=extra_node,
                                      whitelist_path=whitelist_filename,
