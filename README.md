@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/sesam-community/oracle-transform.svg?branch=master)](https://travis-ci.org/sesam-community/oracle-transform)
 
 # Sesam Auto Deployer
-##What do i do?
-###Normal usage
+## What do i do?
+### Normal usage
 I'm a docker container or python script which:
 * Verifies a local node configuration by:
     * Checks all variables in config against specified variables files to verify from.
@@ -183,14 +183,14 @@ EXTRA_NODES={
 VERIFY_VARIABLES=true
 ENVIRONMENT=test
 ```
-* ## I want to improve this! What can I do?
-    * Add support for pushing straight to the extra node, instead of to a git repo. (not my use case, though it might be later)
-    * Add support for keyvault 1 (kv1)
-    * Add support for different authorization options for vault.
-    * Add support for different secret storage services.
-    * Add support for customized node configurations (E.g no whitelist files, no variables file.)
-    * Add support for checking for changes so it could be used as a microservice on an independent node.
-    * Add support for cloning master repo instead of having it available locally (just use functions inside gitter.py) (or build it in azure devops and mount it to the container :J )
-    * Improve the readme or give me feedback for improvements.
-    * Add more templates to the `template_node_root_folder/extra_nodes/` folder.
-             
+## I want to improve this! What can I do?
+ * Add support for pushing straight to the extra node, instead of to a git repo. (not my use case, though it might be later)
+ * Add support for keyvault 1 (kv1)
+ * Add support for different authorization options for vault.
+ * Add support for different secret storage services.
+ * Add support for customized node configurations (E.g no whitelist files, no variables file.)
+ * Add support for checking for changes so it could be used as a microservice on an independent node.
+ * Add support for cloning master repo instead of having it available locally (just use functions inside gitter.py) (or build it in azure devops and mount it to the container :J )
+ * Improve the readme or give me feedback for improvements.
+ * Add more templates to the `template_node_root_folder/extra_nodes/` folder.
+
