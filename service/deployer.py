@@ -1,5 +1,5 @@
 from json import loads as load_json
-from os import getenv
+from os import getenv, listdir
 from sys import exit
 from requests import session as connection
 from sesamutils import sesam_logger
@@ -18,7 +18,7 @@ class AppConfig(object):
 config = AppConfig()
 
 LOGGER = sesam_logger('Autodeployer')
-
+LOGGER.debug(listdir())
 ENV_VARS = [
     ('NODE_FOLDER', str, None),
     ('ENVIRONMENT', str, None),
@@ -51,14 +51,14 @@ def recursive_set_env_var(triple_tuple_env_var):
             elif t == list:
                 setattr(config, var, curvar.split(sep=';'))
             elif t == dict:
-                jsoned_curvar = load_json(curvar)
+                jsoned_curvar = load_json(curvar.replace('`', ''))
                 if child_required_vars is not None:
                     for k in child_required_vars:
                         if k not in jsoned_curvar:
                             missing_vars.append(f'{var}->{k}')
                         else:
-                            type = child_required_vars[k]
-                            if type == bool:
+                            curtype = child_required_vars[k]
+                            if curtype == bool:
                                 jsoned_curvar[k] = jsoned_curvar[k].lower() == 'true'
                 setattr(config, var, jsoned_curvar)
             else:
