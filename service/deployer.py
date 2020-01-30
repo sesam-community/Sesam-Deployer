@@ -126,6 +126,7 @@ def main():
         name = None
     else:
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
+    LOGGER.info(f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}"')
     master_node = Node(path=path, name=None, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
