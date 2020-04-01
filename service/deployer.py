@@ -127,7 +127,7 @@ def main():
     else:
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
     LOGGER.info(f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}"')
-    master_node = Node(path=path, name=None, whitelist_path=whitelist_filename,
+    master_node = Node(path=path, name=name, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
                        verify_vars_from_files=verify_variables_from_files)
@@ -140,11 +140,19 @@ def main():
 
     if getenv("EXTRA_NODES", None) is not None and env != 'ci':
         for extra_node in config.EXTRA_NODES:
+            is_proxy = False
+            if 'PROXY_NODE' in config.EXTRA_NODES[extra_node]:
+                if type(config.EXTRA_NODES[extra_node]['PROXY_NODE']) != bool:
+                    is_proxy = config.EXTRA_NODES[extra_node]['PROXY_NODE'].lower() == 'true'
+                else:
+                    is_proxy = config.EXTRA_NODES[extra_node]['PROXY_NODE']
+
             current_xtra_node = Node(path=path, name=extra_node,
                                      whitelist_path=whitelist_filename,
                                      verify_vars=verify_variables, verify_secrets=verify_secrets,
                                      upload_vars_from_file=None,
-                                     verify_vars_from_files=verify_variables_from_files)
+                                     verify_vars_from_files=verify_variables_from_files,
+                                     proxy_node=is_proxy)
             current_xtra_node.get_node_info()
 
             generate_config(master_node, current_xtra_node, f'{path}/extra_nodes/{extra_node}/')
@@ -153,7 +161,6 @@ def main():
                                                search_conf=False,
                                                verify_vars=config.VERIFY_VARIABLES,
                                                verify_secrets=config.VERIFY_SECRETS)
-
             git_repo = Gitter(config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_URL'],
                               config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_USERNAME'],
                               config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_TOKEN'],
@@ -161,7 +168,6 @@ def main():
                               branch='master')
             git_repo.create_node_file_structure(current_xtra_node, 'test')
             git_repo.push_if_diff()
-
     master_node.verify_node_info(vault,
                                  search_conf=True,
                                  verify_vars=config.VERIFY_VARIABLES,

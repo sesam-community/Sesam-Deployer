@@ -10,13 +10,16 @@ class Node:
                  path: str, name: str, whitelist_path: str,
                  verify_vars: bool, verify_secrets: bool,
                  upload_vars_from_file: str,
-                 verify_vars_from_files: list):
+                 verify_vars_from_files: list,
+                 proxy_node=False):
         self.path: str = path  # sesam-master-node-config/
         self.name: str = name  # master||extra
         self.node_path = path + '/node'
         self.whitelist_path: str = self.node_path + '/' + whitelist_path
         self.verify_vars: bool = verify_vars
         self.verify_secrets: bool = verify_secrets
+        self.proxy_node=proxy_node
+
         self.read_variables_file = None
         self.upload_vars_from_file = None
         if upload_vars_from_file is not None:
@@ -48,7 +51,6 @@ class Node:
                     file_belongs_to_node = recursive_getter(curfile, "metadata.node")
                     if file_belongs_to_node is not None:  # if path ^ is not in file
                         care_about_this_file = file_belongs_to_node == self.name  # true if node is correct and is same
-                        print(f'{filename}, {file_belongs_to_node}, {care_about_this_file}')
                     else:
                         care_about_this_file = self.name == 'master'  # if master True if other False
 
@@ -70,10 +72,10 @@ class Node:
         if search_conf:
             self.find_variables_and_secrets()
         if verify_secrets:
-            if self.variable_verification() is False:
+            if self.secret_verification(vault) is False:
                 exit(-1)
         if verify_vars:
-            if self.secret_verification(vault) is False:
+            if self.variable_verification() is False:
                 exit(-2)
 
     def variable_verification(self):
