@@ -1,0 +1,11 @@
+{
+  "_id": "wo-eidsiva",
+  "type": "pipe",
+  "source": {
+    "type": "dataset",
+    "dataset":"ifs-wo"
+  },
+  "metadata": {
+    "node": "eidsiva"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_id": "##REPLACE_ID##",
+    "type": "pipe",
+    "source": {
+      "type": "json",
+      "system": "from-master-node",
+      "is_chronological": true,
+      "supports_since": true,
+      "url": "##REPLACE_ID##-extra"
+    },
+    "add_namespaces": false,
+    "remove_namespaces": false
+}

@@ -1,14 +1,12 @@
 {
-  "_id": "##REPLACE_ID##-master",
+    "_id": "##REPLACE_ID##-extra",
     "type": "pipe",
     "source": {
         "type": "dataset",
         "dataset": "##REPLACE_ID##"
     },
     "sink": {
-        "type": "json",
-        "system": "to-master-node",
-        "url": "##REPLACE_ID##"
+        "type": "http_endpoint"
     },
     "add_namespaces": false,
     "remove_namespaces": false

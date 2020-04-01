@@ -6,3 +6,5 @@ pipes/eidsiva-meter.conf.json
 pipes/global-kunde.conf.json
 pipes/kunde-ifs.conf.json
 pipes/kundebehandlinger-cab.conf.json
+pipes/wo-eidsiva.conf.json
+pipes/ifs-wo.conf.json
