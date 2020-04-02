@@ -10,7 +10,7 @@
       "BRANCH": "master",
       "DEPLOY_TOKEN": "$SECRET(EXTRA_NODE_GIT_TOKEN)",
       "GIT_REPO": "$ENV(EXTRA_NODE_GIT_REPO)",
-      "GIT_USERNAME": "<github-user>",
+      "GIT_USERNAME": "$ENV(EXTRA_NODE_GIT_USER)",
       "JWT": "$SECRET(EXTRA_NODE_JWT)",
       "LOG_LEVEL": "DEBUG",
       "SYNC_ROOT": "/",

@@ -107,21 +107,22 @@ def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigT
     pipes = a_writes_to_b(master_node, extra_node)
     for p in pipes:
         master_template = templates.pipe_on_master_from_master_to_extra
-        if master_template is not None:
-            master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
-        else:
-            LOGGER.warning('Missing template pipe_on_master_from_master_to_extra')
+        if not extra_node.proxy_node:
+            if master_template is not None:
+                master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
+            else:
+                LOGGER.warning('Missing template pipe_on_master_from_master_to_extra')
 
         extra_template = templates.pipe_on_extra_from_master_to_extra
         if extra_template is not None:
             extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
         else:
             LOGGER.warning('Missing template pipe_on_extra_from_master_to_extra')
-
-    master_systems = [templates.system_on_master_from_master_to_extra, templates.system_on_master_from_extra_to_master]
-    for m_s in master_systems:
-        if m_s is not None:
-            master_node.conf.append(load_json(dump_json(m_s).replace('##REPLACE_ID##', extra_node.name)))
+    if not extra_node.proxy_node:
+        master_systems = [templates.system_on_master_from_master_to_extra, templates.system_on_master_from_extra_to_master]
+        for m_s in master_systems:
+            if m_s is not None:
+                master_node.conf.append(load_json(dump_json(m_s).replace('##REPLACE_ID##', extra_node.name)))
 
 
 def a_writes_to_b(a, b):

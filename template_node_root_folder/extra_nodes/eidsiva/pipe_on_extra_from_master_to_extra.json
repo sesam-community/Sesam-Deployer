@@ -2,11 +2,11 @@
   "_id": "##REPLACE_ID##",
     "type": "pipe",
     "source": {
-      "type": "json",
+      "type": "binary",
       "system": "from-master-node",
-      "is_chronological": true,
+      "is_chronological": false,
       "supports_since": true,
-      "url": "##REPLACE_ID##-extra"
+      "url": "##REPLACE_ID##"
     },
     "add_namespaces": false,
     "remove_namespaces": false
