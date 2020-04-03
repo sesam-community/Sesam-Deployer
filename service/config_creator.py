@@ -102,7 +102,6 @@ def from_extra_to_master(master_node: Node, extra_node: Node, templates: ConfigT
             extra_node.conf.append(load_json(dump_json(e_s).replace('##REPLACE_ID##', master_node.name)))
 
 
-
 def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigTemplates):
     pipes = a_writes_to_b(master_node, extra_node)
     for p in pipes:

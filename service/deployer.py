@@ -155,7 +155,7 @@ def main():
                                      proxy_node=is_proxy)
             current_xtra_node.get_node_info()
 
-            generate_config(master_node, current_xtra_node, f'{path}/extra_nodes/{extra_node}/')
+            generate_config(master_node, current_xtra_node, f'{path}/{config.EXTRA_NODES[extra_node]["EXTRA_NODE_TEMPLATE_PATH"]}')
             get_vars_from_master(master_node, current_xtra_node)
             current_xtra_node.verify_node_info(vault,
                                                search_conf=False,
