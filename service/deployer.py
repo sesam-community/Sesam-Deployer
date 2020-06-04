@@ -31,14 +31,14 @@ ENV_VARS = [
       ('VAULT_MOUNTING_POINT', str, None),
       ('VAULT_URL', str, None)]),
     ('VERIFY_VARIABLES', bool, None),
-    ('MASTER_NODE', dict, {"URL": str, "JWT": str, "UPLOAD_VARIABLES": bool, "UPLOAD_SECRETS": bool}),
+    ('MASTER_NODE', dict, {"URL": str, "JWT": str, "UPLOAD_VARIABLES": bool, "UPLOAD_SECRETS": bool, "CONFIG_GROUP": str}),
     ('EXTRA_NODES', dict, None),
     ('DRY_RUN', bool, None),
     ('SLACK_API_TOKEN', str, None),
     ('SLACK_CHANNEL', str, None)
 ]
 
-OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL']
+OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP']
 
 missing_vars = []
 
@@ -61,7 +61,7 @@ def recursive_set_env_var(triple_tuple_env_var):
                 jsoned_curvar = load_json(curvar.replace('`', ''))
                 if child_required_vars is not None:
                     for k in child_required_vars:
-                        if k not in jsoned_curvar:
+                        if k not in jsoned_curvar and k not in OPTIONAL_ENV_VARS:
                             missing_vars.append(f'{var}->{k}')
                         else:
                             curtype = child_required_vars[k]
@@ -89,7 +89,7 @@ RETRIES = 5
 
 
 def send_slack_message(msg):
-    client = WebClient(token=config.SLACK_API_TOKEN)
+    client = WebClient(token=getattr(config, 'SLACK_API_TOKEN', None))
     channel = config.SLACK_CHANNEL
     filepath = f'./{env}-diff.txt'
     diff_file = open(filepath, 'w')
@@ -101,11 +101,12 @@ def send_slack_message(msg):
             channels=channel,
             file=filepath)
         assert response["file"]  # the uploaded file
+        LOGGER.info('Successfully posted file to slack.')
     except SlackApiError as e:
         # You will get a SlackApiError if "ok" is False
         assert e.response["ok"] is False
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-        print(f"Got an error: {e.response['error']}")
+        LOGGER.warning(f"Got an error while uploading file to slack: {e.response['error']}")
 
 
 
@@ -132,7 +133,7 @@ def do_get(ses, url, params=None):
         for tries in range(RETRIES):
             request = ses.get(url=url, params=params)
             if request.ok:
-                LOGGER.info(f'Succesfully GOT request from "{url}"')
+                LOGGER.info(f'Successfully GOT request from "{url}"')
                 return load_json(request.content.decode('UTF-8'))
             else:
                 LOGGER.warning(
@@ -142,6 +143,23 @@ def do_get(ses, url, params=None):
     except Exception as e:
         LOGGER.critical(f'Got exception "{e}" while doing GET request to url "{url}"')
 
+
+def do_post(ses, url, json, params=None):
+    try:
+        for tries in range(RETRIES):
+            request = ses.post(url=url, json=json, params=params)
+            if request.ok:
+                LOGGER.info(f'Successful POST request to "{url}"')
+                return request.content.decode('UTF-8')
+            else:
+                LOGGER.warning(
+                    f'Could not POST request to url "{url}". Response:{request.content}. Try {tries} of {RETRIES}')
+                sleep(RETRY_TIMER)
+        LOGGER.critical(f'Each POST request failed to "{url}".')
+        return None
+    except Exception as e:
+        LOGGER.critical(f'Got exception "{e}" while doing POST request to url "{url}"')
+        return None
 
 def deploy(url, jwt, upload_variables, upload_secrets, node: Node, config_group=None):
     session = connection()
@@ -157,14 +175,23 @@ def deploy(url, jwt, upload_variables, upload_secrets, node: Node, config_group=
                   params={'force': True}) != 0:  # Node config
             exit(-5)
     else:
+        for f in node.conf:
+            if f['type'] == 'metadata':
+                node.conf.remove(f)
+                LOGGER.warning('Removing node metadata from upload config because CONFIG_GROUP is set!')
+        print(node.conf)
         if do_put(session, f'https://{url}/api/config/{config_group}', json=node.conf,
                   params={'force': True}) != 0:  # Node config
             exit(-6)
 
 
-def do_context_diff(original, new):
-    return ''.join(context_diff(dump_json(original, indent=2).splitlines(True),
-                                dump_json(new, indent=2).splitlines(True),
+def do_context_diff(original, new, dump_as_json=False):
+    if dump_as_json:
+        return ''.join(context_diff(dump_json(original, indent=2).splitlines(True),
+                                    dump_json(new, indent=2).splitlines(True),
+                                    'Original', 'New'))
+    return ''.join(context_diff(original.splitlines(True),
+                                new.splitlines(True),
                                 'Original', 'New'))
 
 
@@ -204,8 +231,10 @@ def do_diff(url, jwt, node: Node, config_group=None):
             if nf['_id'] == rf['_id']:
                 found_file = True
                 if rf != nf:
-                    LOGGER.info(f'{nf["_id"]}\n{do_context_diff(rf, nf)}')
-                    total_string += f'{nf["_id"]}\n{do_context_diff(rf, nf)}\n'
+                    rf_formatted = do_post(session, url=f'https://{url}/api/utils/reformat-config', json=rf)
+                    nf_formatted = do_post(session, url=f'https://{url}/api/utils/reformat-config', json=nf)
+                    LOGGER.info(f'{nf["_id"]}\n{do_context_diff(rf_formatted, nf_formatted)}')
+                    total_string += f'{nf["_id"]}\n{do_context_diff(rf_formatted, nf_formatted)}\n'
                 break
         if not found_file:
             removed_files.append(rf['_id'])
@@ -219,10 +248,10 @@ def do_diff(url, jwt, node: Node, config_group=None):
     if config_group is None:
         running_node_vars = do_get(session, f'https://{url}/api/env')
         new_node_vars = node.upload_vars
-        LOGGER.info(f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars)}')
-        total_string += f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars)}\n'
+        LOGGER.info(f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars, dump_as_json=True)}')
+        total_string += f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars, dump_as_json=True)}\n'
 
-    if config.SLACK_API_TOKEN is not None:
+    if getattr(config, 'SLACK_API_TOKEN', None) is not None:
         send_slack_message(total_string)
 
 
@@ -291,7 +320,6 @@ def main():
                                  search_conf=True,
                                  verify_vars=config.VERIFY_VARIABLES,
                                  verify_secrets=config.VERIFY_SECRETS)
-    #print(master_node.upload_secrets)
     if env != 'ci':
         do_diff(config.MASTER_NODE['URL'],
                 config.MASTER_NODE['JWT'],
