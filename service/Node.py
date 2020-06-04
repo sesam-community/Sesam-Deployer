@@ -38,6 +38,7 @@ class Node:
 
     def get_node_info(self):
         care_about_node = self.name is not None
+        missing_files = []
         for filename in list(
                 filter(
                     lambda x: x != '',
@@ -63,10 +64,13 @@ class Node:
                         self.add_pipe_flow(curfile)
 
             except FileNotFoundError as e:
-                self.LOGGER.critical(f'Could not find file {self.node_path}{filename} in config! Exiting.')
-                exit(-1)
+                self.LOGGER.critical(f'Could not find file {filename} in config!')
+                missing_files.append(filename)
         if self.read_variables_file:
             self.upload_vars = load_json(open(self.upload_vars_from_file, 'r').read())
+        if len(missing_files) != 0:
+            self.LOGGER.critical(f'Could not find files {missing_files} in config! Exiting.')
+            exit(-1)
 
     def verify_node_info(self, vault: Vaulter, search_conf=False, verify_secrets=False, verify_vars=False):
         if search_conf:

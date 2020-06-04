@@ -11,6 +11,8 @@ I'm a docker container or python script which:
     * Node configuration
     * Secrets
     * Variables
+ * Diffs the new config with the currently running config.
+    * Can skip deployment entirely by adding "DRY_RUN": true to environment variables.
 
 ### Special usage
 I can also update a git repo with pipes which match a pattern if "EXTRA_NODES" are specified. (This can be used to deploy from for the seperate node, I'll get back to this!)
@@ -159,19 +161,20 @@ This repo can then be used together with sesam-community/github-autodeployer to 
 
 # Example environment config:
 ```
-PYTHONUNBUFFERED=1
-LOG_LEVEL=debug
-NODE_FOLDER=template_node_root_folder
-VERIFY_SECRETS=true
-VAULT_GIT_TOKEN=***
-VAULT_MOUNTING_POINT=sesam/kv2
-VAULT_URL=https://vault.<org>.io
+PYTHONUNBUFFERED=1,
+LOG_LEVEL="DEBUG",
+NODE_FOLDER="template_node_root_folder",
+VERIFY_SECRETS=true,
+VAULT_GIT_TOKEN="***",
+VAULT_MOUNTING_POINT="sesam/kv2",
+VAULT_URL="https://vault.<org>.io",
 MASTER_NODE={
   "URL": "datahub-<url>.sesam.cloud",
   "JWT": "***",
-  "UPLOAD_VARIABLES": "True",
-  "UPLOAD_SECRETS": "True"
-}
+  "UPLOAD_VARIABLES": true,
+  "UPLOAD_SECRETS": true,
+  "CONFIG_GROUP": "None-By-Default"
+},
 EXTRA_NODES={
   "<extra-node-name>": {
     "EXTRA_NODE_GIT_URL": "github.com/<user/org>/<repo>.git",
@@ -180,8 +183,9 @@ EXTRA_NODES={
     "EXTRA_NODE_TEMPLATE_PATH": "extra_nodes/<extra-node-name>/"
   }
 }
-VERIFY_VARIABLES=true
-ENVIRONMENT=test
+VERIFY_VARIABLES=true,
+ENVIRONMENT=test,
+"DRY_RUN": true
 ```
 ## I want to improve this! What can I do?
  * Add support for pushing straight to the extra node, instead of to a git repo. (not my use case, though it might be later)

@@ -26,10 +26,13 @@ class Gitter:
         repo = Repo.clone_from(url, self.folder, branch=self.branch)
         return repo
 
-    def push_if_diff(self):
+    def push_if_diff(self, dry_run=False):
         if self.is_there_a_diff():
-            self.push()
-            self.LOGGER.info('Successfully pushed to git repo!')
+            if dry_run:
+                self.LOGGER.info('Dry run! Skipping push to repo.')
+            else:
+                self.push()
+                self.LOGGER.info('Successfully pushed to git repo!')
         else:
             self.LOGGER.info('No current diff! Skipping push to repo.')
 

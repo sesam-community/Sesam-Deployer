@@ -1,12 +1,16 @@
-from json import loads as load_json
+from difflib import context_diff
 from os import getenv, listdir
 from sys import exit
 from requests import session as connection
+from time import sleep
+from json import loads as load_json, dumps as dump_json
 from sesamutils import sesam_logger
+from slack import WebClient
+from slack.errors import SlackApiError
 
 # Local imports
-from Vaulter import Vaulter
 from Node import Node
+from Vaulter import Vaulter
 from config_creator import generate_config, get_vars_from_master
 from gitter import Gitter
 
@@ -28,10 +32,13 @@ ENV_VARS = [
       ('VAULT_URL', str, None)]),
     ('VERIFY_VARIABLES', bool, None),
     ('MASTER_NODE', dict, {"URL": str, "JWT": str, "UPLOAD_VARIABLES": bool, "UPLOAD_SECRETS": bool}),
-    ('EXTRA_NODES', dict, None)
+    ('EXTRA_NODES', dict, None),
+    ('DRY_RUN', bool, None),
+    ('SLACK_API_TOKEN', str, None),
+    ('SLACK_CHANNEL', str, None)
 ]
 
-OPTIONAL_ENV_VARS = ['EXTRA_NODES']
+OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL']
 
 missing_vars = []
 
@@ -75,19 +82,44 @@ path = config.NODE_FOLDER
 GIT_REPO_BASE_FOLDERS = 'GIT_REPOS'
 verify_variables = config.VERIFY_VARIABLES
 verify_secrets = config.VERIFY_SECRETS
+dry_run = config.DRY_RUN
+
+RETRY_TIMER = 30
+RETRIES = 5
+
+
+def send_slack_message(msg):
+    client = WebClient(token=config.SLACK_API_TOKEN)
+    channel = config.SLACK_CHANNEL
+    filepath = f'./{env}-diff.txt'
+    diff_file = open(filepath, 'w')
+    diff_file.write(msg)
+    diff_file.close()
+
+    try:
+        response = client.files_upload(
+            channels=channel,
+            file=filepath)
+        assert response["file"]  # the uploaded file
+    except SlackApiError as e:
+        # You will get a SlackApiError if "ok" is False
+        assert e.response["ok"] is False
+        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+        print(f"Got an error: {e.response['error']}")
+
 
 
 def do_put(ses, url, json, params=None):
-    retries = 4
     try:
-        for tries in range(retries):
+        for tries in range(RETRIES):
             request = ses.put(url=url, json=json, params=params)
             if request.ok:
                 LOGGER.info(f'Succesfully PUT request to "{url}"')
                 return 0
             else:
                 LOGGER.warning(
-                    f'Could not PUT request to url "{url}". Response:{request.content}. Try {tries} of {retries}')
+                    f'Could not PUT request to url "{url}". Response:{request.content}. Try {tries} of {RETRIES}')
+                sleep(RETRY_TIMER)
         LOGGER.critical(f'Each PUT request failed to "{url}".')
         return -1
     except Exception as e:
@@ -95,18 +127,103 @@ def do_put(ses, url, json, params=None):
         return -2
 
 
-def deploy(url, jwt, upload_variables, upload_secrets, node: Node):
+def do_get(ses, url, params=None):
+    try:
+        for tries in range(RETRIES):
+            request = ses.get(url=url, params=params)
+            if request.ok:
+                LOGGER.info(f'Succesfully GOT request from "{url}"')
+                return load_json(request.content.decode('UTF-8'))
+            else:
+                LOGGER.warning(
+                    f'Could not GET request from url "{url}". Response:{request.content}. Try {tries} of {RETRIES}')
+                sleep(RETRY_TIMER)
+        LOGGER.critical(f'Each GET request failed to "{url}".')
+    except Exception as e:
+        LOGGER.critical(f'Got exception "{e}" while doing GET request to url "{url}"')
+
+
+def deploy(url, jwt, upload_variables, upload_secrets, node: Node, config_group=None):
     session = connection()
     session.headers = {'Authorization': f'bearer {jwt}'}
-    if upload_secrets:
-        if do_put(session, f'https://{url}/api/secrets', json=node.upload_secrets) != 0:  # Secrets
-            exit(-3)
-    if upload_variables:
-        if do_put(session, f'https://{url}/api/env', json=node.upload_vars) != 0:  # Environment variables
-            exit(-4)
-    if do_put(session, f'https://{url}/api/config', json=node.conf,
-              params={'force': True}) != 0:  # Node config
-        exit(-5)
+    if config_group is None:
+        if upload_secrets:
+            if do_put(session, f'https://{url}/api/secrets', json=node.upload_secrets) != 0:  # Secrets
+                exit(-3)
+        if upload_variables:
+            if do_put(session, f'https://{url}/api/env', json=node.upload_vars) != 0:  # Environment variables
+                exit(-4)
+        if do_put(session, f'https://{url}/api/config', json=node.conf,
+                  params={'force': True}) != 0:  # Node config
+            exit(-5)
+    else:
+        if do_put(session, f'https://{url}/api/config/{config_group}', json=node.conf,
+                  params={'force': True}) != 0:  # Node config
+            exit(-6)
+
+
+def do_context_diff(original, new):
+    return ''.join(context_diff(dump_json(original, indent=2).splitlines(True),
+                                dump_json(new, indent=2).splitlines(True),
+                                'Original', 'New'))
+
+
+def a_not_in_b(a, b):
+    output = []
+    for af in a:
+        found_file = False
+        for bf in b:
+            if af['_id'] == bf['_id']:
+                found_file = True
+                break
+        if not found_file:
+            output.append(af['_id'])
+    return output
+
+
+def do_diff(url, jwt, node: Node, config_group=None):
+    session = connection()
+    session.headers = {'Authorization': f'bearer {jwt}'}
+    total_string = ''
+
+    # Do config diff
+    config_url = f'https://{url}/api/config'
+    if config_group is not None:
+        config_url += f'/{config_group}'
+    running_node_conf = sorted(do_get(session, config_url), key=lambda k: k['_id'])
+    new_node_config = sorted(node.conf, key=lambda k: k['_id'])
+
+
+    LOGGER.info('Running config diff!')
+    removed_files = []
+    new_files = a_not_in_b(new_node_config, running_node_conf)
+
+    for rf in running_node_conf:
+        found_file = False
+        for nf in new_node_config:
+            if nf['_id'] == rf['_id']:
+                found_file = True
+                if rf != nf:
+                    LOGGER.info(f'{nf["_id"]}\n{do_context_diff(rf, nf)}')
+                    total_string += f'{nf["_id"]}\n{do_context_diff(rf, nf)}\n'
+                break
+        if not found_file:
+            removed_files.append(rf['_id'])
+
+    LOGGER.info(f'New files!: {new_files}')
+    LOGGER.info(f'Removed files!: {removed_files}')
+    total_string += f'New files!: {new_files}\n'
+    total_string += f'Removed files!: {removed_files}\n'
+
+    # Do variable diff
+    if config_group is None:
+        running_node_vars = do_get(session, f'https://{url}/api/env')
+        new_node_vars = node.upload_vars
+        LOGGER.info(f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars)}')
+        total_string += f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars)}\n'
+
+    if config.SLACK_API_TOKEN is not None:
+        send_slack_message(total_string)
 
 
 def main():
@@ -126,7 +243,8 @@ def main():
         name = None
     else:
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
-    LOGGER.info(f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}"')
+    LOGGER.info(
+        f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}" | Dry Run: "{dry_run}"')
     master_node = Node(path=path, name=name, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
@@ -155,7 +273,8 @@ def main():
                                      proxy_node=is_proxy)
             current_xtra_node.get_node_info()
 
-            generate_config(master_node, current_xtra_node, f'{path}/{config.EXTRA_NODES[extra_node]["EXTRA_NODE_TEMPLATE_PATH"]}')
+            generate_config(master_node, current_xtra_node,
+                            f'{path}/{config.EXTRA_NODES[extra_node]["EXTRA_NODE_TEMPLATE_PATH"]}')
             get_vars_from_master(master_node, current_xtra_node)
             current_xtra_node.verify_node_info(vault,
                                                search_conf=False,
@@ -165,19 +284,29 @@ def main():
                               config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_USERNAME'],
                               config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_TOKEN'],
                               folder=GIT_REPO_BASE_FOLDERS + '/' + extra_node + '/',
-                              branch='master')
-            git_repo.create_node_file_structure(current_xtra_node, 'test')
-            git_repo.push_if_diff()
+                              branch=config.EXTRA_NODES[extra_node]['EXTRA_NODE_GIT_BRANCH'])
+            git_repo.create_node_file_structure(current_xtra_node, env)
+            git_repo.push_if_diff(dry_run)
     master_node.verify_node_info(vault,
                                  search_conf=True,
                                  verify_vars=config.VERIFY_VARIABLES,
                                  verify_secrets=config.VERIFY_SECRETS)
-    deploy(config.MASTER_NODE['URL'],
-           config.MASTER_NODE['JWT'],
-           config.MASTER_NODE['UPLOAD_VARIABLES'],
-           config.MASTER_NODE['UPLOAD_SECRETS'],
-           node=master_node)
-    LOGGER.info('Successfully deployed!')
+    #print(master_node.upload_secrets)
+    if env != 'ci':
+        do_diff(config.MASTER_NODE['URL'],
+                config.MASTER_NODE['JWT'],
+                master_node,
+                config_group=config.MASTER_NODE.get('CONFIG_GROUP', None))
+    if dry_run:
+        LOGGER.info('Succesfully completed dry run!')
+    else:
+        deploy(config.MASTER_NODE['URL'],
+               config.MASTER_NODE['JWT'],
+               config.MASTER_NODE['UPLOAD_VARIABLES'],
+               config.MASTER_NODE['UPLOAD_SECRETS'],
+               node=master_node,
+               config_group=config.MASTER_NODE.get('CONFIG_GROUP', None))
+        LOGGER.info('Successfully deployed!')
 
 
 if __name__ == '__main__':
