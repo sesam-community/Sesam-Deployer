@@ -35,10 +35,11 @@ ENV_VARS = [
     ('EXTRA_NODES', dict, None),
     ('DRY_RUN', bool, None),
     ('SLACK_API_TOKEN', str, None),
-    ('SLACK_CHANNEL', str, None)
+    ('SLACK_CHANNEL', str, None),
+    ('RELEASE_URL', str, None)
 ]
 
-OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP']
+OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL']
 
 missing_vars = []
 
@@ -61,8 +62,9 @@ def recursive_set_env_var(triple_tuple_env_var):
                 jsoned_curvar = load_json(curvar.replace('`', ''))
                 if child_required_vars is not None:
                     for k in child_required_vars:
-                        if k not in jsoned_curvar and k not in OPTIONAL_ENV_VARS:
-                            missing_vars.append(f'{var}->{k}')
+                        if k not in jsoned_curvar:
+                            if k not in OPTIONAL_ENV_VARS:
+                                missing_vars.append(f'{var}->{k}')
                         else:
                             curtype = child_required_vars[k]
                             if curtype == bool:
@@ -88,7 +90,7 @@ RETRY_TIMER = 30
 RETRIES = 5
 
 
-def send_slack_message(msg):
+def send_slack_file(msg):
     client = WebClient(token=getattr(config, 'SLACK_API_TOKEN', None))
     channel = config.SLACK_CHANNEL
     filepath = f'./{env}-diff.txt'
@@ -107,6 +109,20 @@ def send_slack_message(msg):
         assert e.response["ok"] is False
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
         LOGGER.warning(f"Got an error while uploading file to slack: {e.response['error']}")
+
+
+def send_slack_message(msg):
+    client = WebClient(token=getattr(config, 'SLACK_API_TOKEN', None))
+    channel = config.SLACK_CHANNEL
+    try:
+        response = client.chat_postMessage(
+            channel=channel,
+            text=msg)
+    except SlackApiError as e:
+        # You will get a SlackApiError if "ok" is False
+        assert e.response["ok"] is False
+        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+        LOGGER.warning(f"Got an error while sending message to slack: {e.response['error']}")
 
 
 
@@ -161,6 +177,7 @@ def do_post(ses, url, json, params=None):
         LOGGER.critical(f'Got exception "{e}" while doing POST request to url "{url}"')
         return None
 
+
 def deploy(url, jwt, upload_variables, upload_secrets, node: Node, config_group=None):
     session = connection()
     session.headers = {'Authorization': f'bearer {jwt}'}
@@ -179,7 +196,13 @@ def deploy(url, jwt, upload_variables, upload_secrets, node: Node, config_group=
             if f['type'] == 'metadata':
                 node.conf.remove(f)
                 LOGGER.warning('Removing node metadata from upload config because CONFIG_GROUP is set!')
-        print(node.conf)
+
+        if upload_secrets:
+            if do_put(session, f'https://{url}/api/secrets', json=node.upload_secrets) != 0:  # Secrets
+                exit(-3)
+        if upload_variables:
+            if do_put(session, f'https://{url}/api/env', json=node.upload_vars) != 0:  # Environment variables
+                exit(-4)
         if do_put(session, f'https://{url}/api/config/{config_group}', json=node.conf,
                   params={'force': True}) != 0:  # Node config
             exit(-6)
@@ -252,7 +275,10 @@ def do_diff(url, jwt, node: Node, config_group=None):
         total_string += f'Running variables diff!\n{do_context_diff(running_node_vars, new_node_vars, dump_as_json=True)}\n'
 
     if getattr(config, 'SLACK_API_TOKEN', None) is not None:
-        send_slack_message(total_string)
+        release_url = getattr(config, 'RELEASE_URL', None)
+        if release_url:
+            send_slack_message(f'This release can be found at: {release_url}')
+        send_slack_file(total_string)
 
 
 def main():
@@ -274,6 +300,7 @@ def main():
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
     LOGGER.info(
         f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}" | Dry Run: "{dry_run}"')
+    LOGGER.debug(listdir('template_node_root_folder'))
     master_node = Node(path=path, name=name, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
@@ -293,6 +320,12 @@ def main():
                     is_proxy = config.EXTRA_NODES[extra_node]['PROXY_NODE'].lower() == 'true'
                 else:
                     is_proxy = config.EXTRA_NODES[extra_node]['PROXY_NODE']
+            if is_proxy:
+                LOGGER.debug(f'Extra node {extra_node} is a proxy node!')
+            else:
+                LOGGER.debug(f'Extra node {extra_node} is NOT a proxy node!')
+
+
 
             current_xtra_node = Node(path=path, name=extra_node,
                                      whitelist_path=whitelist_filename,

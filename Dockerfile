@@ -13,6 +13,7 @@ ADD service/config_creator.py /service
 
 WORKDIR /service
 
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 EXPOSE 5000/tcp

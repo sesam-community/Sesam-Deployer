@@ -147,7 +147,7 @@ class Node:
 
         self.pipes[pipe_id]['sink'] = true_sink  # Either specified dataset or same as pipe id
 
-        self.LOGGER.debug(f'Flow for "{pipe_id}" is: "{self.pipes[pipe_id]}"')
+        #self.LOGGER.debug(f'Flow for "{pipe_id}" is: "{self.pipes[pipe_id]}"')
 
     def pipe_flow_from_conf(self):
         self.pipes = {}
