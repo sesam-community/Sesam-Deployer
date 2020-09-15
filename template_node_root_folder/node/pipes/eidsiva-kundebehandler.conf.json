@@ -1,0 +1,20 @@
+{
+  "_id": "eidsiva-kundebehandler",
+  "type": "pipe",
+  "source": {
+    "type": "dataset",
+    "dataset": "eidsiva-kunder"
+  },
+  "transform": {
+    "type": "dtl",
+    "rules" : {
+      "default" : [
+        ["add", "kundeID", "nope"],
+        ["copy", "*"]
+      ]
+    }
+  },
+  "metadata": {
+    "node": "eidsiva"
+  }
+}

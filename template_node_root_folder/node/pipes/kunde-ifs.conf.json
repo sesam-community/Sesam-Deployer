@@ -1,0 +1,17 @@
+{
+  "_id": "kunde-ifs",
+  "type": "pipe",
+  "source": {
+    "type": "dataset",
+    "dataset":"eidsiva-kunder"
+  },
+  "transform":{
+    "type": "dtl",
+    "rules":{
+      "default" : [
+        ["copy", "*"],
+        ["add", "hello", "world"]
+      ]
+    }
+  }
+}

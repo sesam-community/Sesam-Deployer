@@ -1,0 +1,15 @@
+{
+  "_id": "##REPLACE_ID##-master",
+    "type": "pipe",
+    "source": {
+        "type": "dataset",
+        "dataset": "##REPLACE_ID##"
+    },
+    "sink": {
+        "type": "json",
+        "system": "to-master-node",
+        "url": "##REPLACE_ID##"
+    },
+    "add_namespaces": false,
+    "remove_namespaces": false
+}

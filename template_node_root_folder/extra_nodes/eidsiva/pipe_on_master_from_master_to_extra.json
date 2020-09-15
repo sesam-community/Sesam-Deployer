@@ -1,0 +1,13 @@
+{
+    "_id": "##REPLACE_ID##-extra",
+    "type": "pipe",
+    "source": {
+        "type": "dataset",
+        "dataset": "##REPLACE_ID##"
+    },
+    "sink": {
+        "type": "http_endpoint"
+    },
+    "add_namespaces": false,
+    "remove_namespaces": false
+}

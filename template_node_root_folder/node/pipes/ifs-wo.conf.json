@@ -1,0 +1,17 @@
+{
+  "_id": "ifs-wo",
+  "type": "pipe",
+  "source": {
+    "type": "embedded",
+    "entities": [
+      {
+        "_id": "foo",
+        "Etternavn": "GabbeTheBabbe"
+      },
+      {
+        "_id": "bar",
+        "Etternavn": "Nordmann"
+      }
+    ]
+  }
+}

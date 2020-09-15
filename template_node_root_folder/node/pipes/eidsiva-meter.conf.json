@@ -1,0 +1,20 @@
+{
+  "_id": "eidsiva-meter",
+  "type": "pipe",
+  "source": {
+    "type": "embedded",
+    "entities": [
+      {
+        "_id": "Gabriell",
+        "Avlesning": "OVER 9000"
+      },
+      {
+        "_id": "Ola",
+        "Avlesning": "Sykt Høyt Tall"
+      }
+    ]
+  },
+  "metadata": {
+    "node": "eidsiva"
+  }
+}

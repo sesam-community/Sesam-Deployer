@@ -1,0 +1,15 @@
+{
+  "_id": "cab",
+  "type": "system:oracle_tns",
+  "name": "cab",
+  "charset": "utf8",
+  "coerce_to_decimal": true,
+  "password": "Jeg funker egentlig ikke",
+  "pool_max_overflow": 10,
+  "pool_recycle": 1800,
+  "pool_size": 10,
+  "pool_timeout": 30,
+  "timezone": "Europe/Oslo",
+  "tns_name": "Nei",
+  "username": "Feil bruker"
+}

@@ -1,0 +1,14 @@
+{
+  "dependency": true,
+  "freshdesk-elhub-integration-contact-id": 7011541152,
+  "freshdesk-group-id-bedrift": 7000011067,
+  "freshdesk-group-id-privat": 7000011066,
+  "merge-version": 2,
+  "node-env": "test",
+  "pipe_cleanup_after_deletion": false,
+  "spectrum_pool_max_overflow": 10,
+  "spectrum_pool_size": 10,
+  "surveymonkey_baseurl": "https://api.surveymonkey.com/v3/",
+  "support-issue-generator": "https://ifsextensionsapi.test-hafslundnett.io"
+
+}

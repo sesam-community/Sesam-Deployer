@@ -2,16 +2,17 @@ from sys import exit
 
 from hvac import Client
 from hvac.exceptions import InvalidPath
-
+from sesamutils import sesam_logger
 
 class Vaulter:
     def __init__(self, url, git_token, mount_point):
+        self.LOGGER = sesam_logger('KeyVault')
         self.client = Client(url=url)
         self.mount_point = mount_point
         self.client.auth.github.login(git_token)
         self.missing_secrets = []
         if not self.client.is_authenticated():
-            print(f'Cannot authenticate vault {url}. Exiting.')
+            self.LOGGER.critical(f'Cannot authenticate vault {url}. Exiting.')
             exit(-1)
 
     def get_secret(self, secret):
@@ -23,7 +24,6 @@ class Vaulter:
                 return_value = key_value[k]
                 break
         except InvalidPath as e:
-            print(f'Could not find {secret} in vault. Invalid path: "{e}"')
             self.missing_secrets.append(secret)
         return return_value
 

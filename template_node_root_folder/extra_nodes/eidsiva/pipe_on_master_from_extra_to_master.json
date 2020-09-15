@@ -1,0 +1,9 @@
+{
+    "_id": "##REPLACE_ID##",
+    "type": "pipe",
+    "source": {
+        "type": "http_endpoint"
+    },
+    "add_namespaces": false,
+    "remove_namespaces": false
+}

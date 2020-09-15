@@ -1,0 +1,25 @@
+{
+  "_id": "extra-node-watcher-2",
+  "type": "system:microservice",
+  "metadata": {
+    "node": "extra"
+  },
+  "docker": {
+    "environment": {
+      "AUTODEPLOYER_PATH": "systems/extra-node-watcher.conf.json",
+      "BRANCH": "master",
+      "DEPLOY_TOKEN": "$SECRET(EXTRA_NODE_GIT_TOKEN)",
+      "GIT_REPO": "$ENV(EXTRA_NODE_GIT_REPO)",
+      "GIT_USERNAME": "$ENV(EXTRA_NODE_GIT_USER)",
+      "JWT": "$SECRET(EXTRA_NODE_JWT)",
+      "LOG_LEVEL": "DEBUG",
+      "SYNC_ROOT": "/",
+      "VARIABLES_FILE_PATH": "variables/variables-test.json",
+      "VAULT_GIT_TOKEN": "$SECRET(EXTRA_NODE_GIT_TOKEN)",
+      "VAULT_MOUNTING_POINT": "$ENV(VAULT_MOUNTING_POINT)",
+      "VAULT_URL": "$ENV(VAULT_URL)"
+    },
+    "image": "$ENV(watcher-image)",
+    "port": 5000
+  }
+}

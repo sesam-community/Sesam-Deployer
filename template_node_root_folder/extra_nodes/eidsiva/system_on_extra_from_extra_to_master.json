@@ -1,0 +1,10 @@
+{
+  "_id": "to-master-node",
+  "type": "system:url",
+  "authentication": "jwt",
+  "connect_timeout": 60,
+  "jwt_token": "$SECRET(GABRIELL_DEV_NODE_JWT)",
+  "read_timeout": 7200,
+  "url_pattern": "$ENV(master-endpoint)/api/receivers/%s/entities",
+  "verify_ssl": true
+}

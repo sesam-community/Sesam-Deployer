@@ -7,10 +7,13 @@ RUN mkdir -p /service/
 ADD ./requirements.txt /service
 ADD service/deployer.py /service
 ADD service/Vaulter.py /service
-ADD ./$NODE_FOLDER /service/$NODE_FOLDER
+ADD service/gitter.py /service
+ADD service/Node.py /service
+ADD service/config_creator.py /service
 
 WORKDIR /service
 
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 EXPOSE 5000/tcp

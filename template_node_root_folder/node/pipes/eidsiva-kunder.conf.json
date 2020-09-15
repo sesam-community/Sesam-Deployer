@@ -1,0 +1,20 @@
+{
+  "_id": "eidsiva-kunder",
+  "type": "pipe",
+  "source": {
+    "type": "embedded",
+    "entities": [
+      {
+        "_id": "Gabriell",
+        "Etternavn": "GabbeTheBabbe"
+      },
+      {
+        "_id": "Ola",
+        "Etternavn": "Nordmann"
+      }
+    ]
+  },
+  "metadata": {
+    "node": "eidsiva"
+  }
+}
