@@ -1,8 +1,10 @@
 from json import loads as load_json, dumps as dump_json
-from sesamutils import sesam_logger
 from re import findall as regex_findall
 from sys import exit
+
 from Vaulter import Vaulter
+from sesamutils import sesam_logger
+
 
 class Node:
 
@@ -147,7 +149,7 @@ class Node:
 
         self.pipes[pipe_id]['sink'] = true_sink  # Either specified dataset or same as pipe id
 
-        #self.LOGGER.debug(f'Flow for "{pipe_id}" is: "{self.pipes[pipe_id]}"')
+        # self.LOGGER.debug(f'Flow for "{pipe_id}" is: "{self.pipes[pipe_id]}"')
 
     def pipe_flow_from_conf(self):
         self.pipes = {}
@@ -155,6 +157,17 @@ class Node:
             if recursive_getter("type") == 'Pipe':
                 self.add_pipe_flow(entity)
 
+    def get_pipe_conf(self, _id: str):
+        for conf in self.conf:
+            if conf['_id'] == _id:
+                return conf
+
+    def get_pipe_with_source(self, _id: str):
+        for p in self.pipes:
+            if 'source' in self.pipes[p]:
+                if _id in self.pipes[p]['source']:
+                    return p
+        return None
 
 def recursive_getter(entity, key_str):
     keys = key_str.split('.')

@@ -1,10 +1,13 @@
-from Node import Node
-from os import listdir
 from json import loads as load_json, dumps as dump_json
-from copy import deepcopy
+from os import listdir
+from re import sub
+
+from Node import Node
+from dotty_dict import dotty
 from sesamutils import sesam_logger
 
 LOGGER = sesam_logger('config-creator')
+
 
 class ConfigTemplates:
     def __init__(self, path):
@@ -84,23 +87,47 @@ def from_extra_to_master(master_node: Node, extra_node: Node, templates: ConfigT
         pipes = a_writes_to_b(extra_node, master_node)
 
     for p in pipes:
+        inbound_parent_pipe = extra_node.get_pipe_conf(p)
+        outbound_parent_pipe = None
+        outbound_pipe_name = master_node.get_pipe_with_source(p)
+        if outbound_pipe_name:
+            outbound_parent_pipe = master_node.get_pipe_conf(outbound_pipe_name)
+
         master_template = templates.pipe_on_master_from_extra_to_master
         if master_template is not None:
             if type(master_template) is list:
-                for ext_p in master_template:
-                    master_node.conf.append(load_json(dump_json(ext_p).replace('##REPLACE_ID##', p)))
+                for m_template in master_template:
+                    stringed_template = dump_json(m_template)
+                    replaced_string_template = fill_template(stringed_template, inbound_parent_pipe,
+                                                             outbound_parent_pipe)
+                    jsoned_replaced_string_template = load_json(replaced_string_template)
+                    master_node.conf.append(jsoned_replaced_string_template)
+
             else:
-                master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
+                stringed_template = dump_json(master_template)
+                replaced_string_template = fill_template(stringed_template, inbound_parent_pipe, outbound_parent_pipe)
+                jsoned_replaced_string_template = load_json(replaced_string_template)
+                master_node.conf.append(jsoned_replaced_string_template)
+
         else:
             LOGGER.warning('Missing template pipe_on_master_from_extra_to_master')
 
         extra_template = templates.pipe_on_extra_from_extra_to_master
         if extra_template is not None:
             if type(extra_template) is list:
-                for ext_p in extra_template:
-                    extra_node.conf.append(load_json(dump_json(ext_p).replace('##REPLACE_ID##', p)))
+                for x_template in extra_template:
+                    stringed_template = dump_json(x_template)
+                    replaced_string_template = fill_template(stringed_template, inbound_parent_pipe,
+                                                             outbound_parent_pipe)
+                    jsoned_replaced_string_template = load_json(replaced_string_template)
+                    extra_node.conf.append(jsoned_replaced_string_template)
+
             else:
-                extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
+                stringed_template = dump_json(extra_template)
+                replaced_string_template = fill_template(stringed_template, inbound_parent_pipe, outbound_parent_pipe)
+                jsoned_replaced_string_template = load_json(replaced_string_template)
+                extra_node.conf.append(jsoned_replaced_string_template)
+
         else:
             LOGGER.warning('Missing template pipe_on_extra_from_extra_to_master.')
 
@@ -117,28 +144,55 @@ def from_extra_to_master(master_node: Node, extra_node: Node, templates: ConfigT
 def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigTemplates):
     pipes = a_writes_to_b(master_node, extra_node)
     for p in pipes:
+
+        inbound_parent_pipe = master_node.get_pipe_conf(p)
+        outbound_parent_pipe = None
+        outbound_pipe_name = extra_node.get_pipe_with_source(p)
+        if outbound_pipe_name:
+            outbound_parent_pipe = extra_node.get_pipe_conf(outbound_pipe_name)
+
         master_template = templates.pipe_on_master_from_master_to_extra
         if not extra_node.proxy_node:
             if master_template is not None:
                 if type(master_template) is list:
-                    for l in master_template:
-                        master_node.conf.append(load_json(dump_json(l).replace('##REPLACE_ID##', p)))
+                    for m_template in master_template:
+                        stringed_template = dump_json(m_template)
+                        replaced_string_template = fill_template(stringed_template, inbound_parent_pipe,
+                                                                 outbound_parent_pipe)
+                        jsoned_replaced_string_template = load_json(replaced_string_template)
+                        master_node.conf.append(jsoned_replaced_string_template)
+
                 else:
-                    master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
+                    stringed_template = dump_json(master_template)
+                    replaced_string_template = fill_template(stringed_template, inbound_parent_pipe,
+                                                             outbound_parent_pipe)
+                    jsoned_replaced_string_template = load_json(replaced_string_template)
+                    master_node.conf.append(jsoned_replaced_string_template)
+
             else:
                 LOGGER.warning('Missing template pipe_on_master_from_master_to_extra')
 
         extra_template = templates.pipe_on_extra_from_master_to_extra
         if extra_template is not None:
             if type(extra_template) is list:
-                for l in extra_template:
-                    extra_node.conf.append(load_json(dump_json(l).replace('##REPLACE_ID##', p)))
+                for ex_template in extra_template:
+                    stringed_template = dump_json(ex_template)
+                    replaced_string_template = fill_template(stringed_template, inbound_parent_pipe,
+                                                             outbound_parent_pipe)
+                    jsoned_replaced_string_template = load_json(replaced_string_template)
+                    extra_node.conf.append(jsoned_replaced_string_template)
+
             else:
-                extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
+                stringed_template = dump_json(extra_template)
+                replaced_string_template = fill_template(stringed_template, inbound_parent_pipe, outbound_parent_pipe)
+                jsoned_replaced_string_template = load_json(replaced_string_template)
+                extra_node.conf.append(jsoned_replaced_string_template)
+
         else:
             LOGGER.warning('Missing template pipe_on_extra_from_master_to_extra')
     if not extra_node.proxy_node:
-        master_systems = [templates.system_on_master_from_master_to_extra, templates.system_on_master_from_extra_to_master]
+        master_systems = [templates.system_on_master_from_master_to_extra,
+                          templates.system_on_master_from_extra_to_master]
         for m_s in master_systems:
             if m_s is not None:
                 if type(m_s) is list:
@@ -146,6 +200,46 @@ def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigT
                         master_node.conf.append(load_json(dump_json(sys).replace('##REPLACE_ID##', extra_node.name)))
                 else:
                     master_node.conf.append(load_json(dump_json(m_s).replace('##REPLACE_ID##', extra_node.name)))
+
+
+def fill_template(template: str, inbound_parent_pipe: dict, outbound_parent_pipe: dict):
+    """
+    I take a template and replace the strings present.
+    I replace both the ##REPLACE_ID## with the parent pipe name and ##PARENT_PIPE.<key>## with values from parent.
+    return: str
+    """
+    regex_inbound = r"#{2}INBOUND_PARENT_PIPE\.(.*?)#{2}"
+    regex_outbound = r"#{2}OUTBOUND_PARENT_PIPE\.(.*?)#{2}"
+    regex_replace_id = r'#{2}(REPLACE_ID)#{2}'
+
+    dotted_parent_inbound = dotty(inbound_parent_pipe)
+    dotted_parent_outbound = dotty(outbound_parent_pipe)
+    pipe_id = dotted_parent_inbound['_id']
+
+    def replace_matched_strings_from_inbound(matched_string):
+        """matched_string is of type re.Match"""
+        try:
+            output = dotted_parent_inbound[matched_string.group(1)]
+            return output
+        except KeyError as e:
+            LOGGER.error(f'Could not find keys: {matched_string.group(1)} in parent pipe: {pipe_id}.\nError: {e}')
+            exit(-1)
+
+    def replace_matched_strings_from_outbound(matched_string):
+        """matched_string is of type re.Match"""
+        try:
+            output = dotted_parent_outbound[matched_string.group(1)]
+            return output
+        except KeyError as e:
+            LOGGER.error(f'Could not find keys: {matched_string.group(1)} in parent pipe: {pipe_id}.\nError: {e}')
+            exit(-1)
+
+    template_replaced_id = sub(pattern=regex_replace_id, repl=pipe_id, string=template)
+    inbound_template = sub(pattern=regex_inbound, repl=replace_matched_strings_from_inbound,
+                           string=template_replaced_id)
+    outbound_template = sub(pattern=regex_outbound, repl=replace_matched_strings_from_outbound,
+                            string=inbound_template)
+    return outbound_template
 
 
 def a_writes_to_b(a, b):
