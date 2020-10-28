@@ -86,13 +86,21 @@ def from_extra_to_master(master_node: Node, extra_node: Node, templates: ConfigT
     for p in pipes:
         master_template = templates.pipe_on_master_from_extra_to_master
         if master_template is not None:
-            master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
+            if type(master_template) is list:
+                for ext_p in master_template:
+                    master_node.conf.append(load_json(dump_json(ext_p).replace('##REPLACE_ID##', p)))
+            else:
+                master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
         else:
             LOGGER.warning('Missing template pipe_on_master_from_extra_to_master')
 
         extra_template = templates.pipe_on_extra_from_extra_to_master
         if extra_template is not None:
-            extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
+            if type(extra_template) is list:
+                for ext_p in extra_template:
+                    extra_node.conf.append(load_json(dump_json(ext_p).replace('##REPLACE_ID##', p)))
+            else:
+                extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
         else:
             LOGGER.warning('Missing template pipe_on_extra_from_extra_to_master.')
 
@@ -108,13 +116,21 @@ def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigT
         master_template = templates.pipe_on_master_from_master_to_extra
         if not extra_node.proxy_node:
             if master_template is not None:
-                master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
+                if type(master_template) is list:
+                    for l in master_template:
+                        master_node.conf.append(load_json(dump_json(l).replace('##REPLACE_ID##', p)))
+                else:
+                    master_node.conf.append(load_json(dump_json(master_template).replace('##REPLACE_ID##', p)))
             else:
                 LOGGER.warning('Missing template pipe_on_master_from_master_to_extra')
 
         extra_template = templates.pipe_on_extra_from_master_to_extra
         if extra_template is not None:
-            extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
+            if type(extra_template) is list:
+                for l in extra_template:
+                    extra_node.conf.append(load_json(dump_json(l).replace('##REPLACE_ID##', p)))
+            else:
+                extra_node.conf.append(load_json(dump_json(extra_template).replace('##REPLACE_ID##', p)))
         else:
             LOGGER.warning('Missing template pipe_on_extra_from_master_to_extra')
     if not extra_node.proxy_node:
