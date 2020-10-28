@@ -107,7 +107,11 @@ def from_extra_to_master(master_node: Node, extra_node: Node, templates: ConfigT
     extra_systems = [templates.system_on_extra_from_extra_to_master, templates.system_on_extra_from_master_to_extra]
     for e_s in extra_systems:
         if e_s is not None:
-            extra_node.conf.append(load_json(dump_json(e_s).replace('##REPLACE_ID##', master_node.name)))
+            if type(e_s) is list:
+                for sys in e_s:
+                    master_node.conf.append(load_json(dump_json(sys).replace('##REPLACE_ID##', extra_node.name)))
+            else:
+                extra_node.conf.append(load_json(dump_json(e_s).replace('##REPLACE_ID##', master_node.name)))
 
 
 def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigTemplates):
@@ -137,7 +141,11 @@ def from_master_to_extra(master_node: Node, extra_node: Node, templates: ConfigT
         master_systems = [templates.system_on_master_from_master_to_extra, templates.system_on_master_from_extra_to_master]
         for m_s in master_systems:
             if m_s is not None:
-                master_node.conf.append(load_json(dump_json(m_s).replace('##REPLACE_ID##', extra_node.name)))
+                if type(m_s) is list:
+                    for sys in m_s:
+                        master_node.conf.append(load_json(dump_json(sys).replace('##REPLACE_ID##', extra_node.name)))
+                else:
+                    master_node.conf.append(load_json(dump_json(m_s).replace('##REPLACE_ID##', extra_node.name)))
 
 
 def a_writes_to_b(a, b):
