@@ -13,6 +13,7 @@ I'm a docker container or python script which:
     * Variables
  * Diffs the new config with the currently running config.
     * Can skip deployment entirely by adding "DRY_RUN": true to environment variables.
+ * Posts the diff to a slack channel and if running in an azure release pipeline, the link to the release. 
 
 ### Special usage
 I can also update a git repo with pipes which match a pattern if "EXTRA_NODES" are specified. (This can be used to deploy from for the seperate node, I'll get back to this!)
@@ -105,7 +106,26 @@ system_on_master_from_master_to_extra.json
 ``` 
 `<what>-on_<where>_from_<where>_to_<where>.json`
 
-You only need to define a template if you're actually going to need it.
+##### Ok, but how what do the templates contain?
+The templates contain either one or more pipes or systems where ##REPLACE_ID## will be replaced with the inbound parent pipe which produces the data you're sending across the nodes.
+
+Inside the templates you can also define ##INBOUND_PARENT_PIPE.\<supports\>.\<nested\>.\<dicts\>## which will grab the value from the inbound pipe and set it in the template pipe.
+
+You can also use ##OUTBOUND_PARENT_PIPE.dotted.notation.to.access.dicts## to grab values from the outgoing pipe.
+
+
+What is the outbound and inbound parent pipe you might ask? Well...
+
+The inbound parent pipe is the pipe which produces the data you want moved across the nodes.
+
+The outbound parent pipe is the pipe which uses the produced data.
+
+By this logic, the template pipe is the pipe which moves the data, and is in between these pipes.
+
+You can view this in action inside this file: /template_node_root_folder/extra_nodes/eidsiva/pipe_on_extra_from_master_to_extra.json
+
+*POTENTIAL PROBLEM* : The outbound parent pipe in cases where multiple pipes use the data you move accross nodes would be randomly picked.
+
 
 #### Where do i put the templates?
 Good question! You put them inside the folder which contains your node folder. Example:

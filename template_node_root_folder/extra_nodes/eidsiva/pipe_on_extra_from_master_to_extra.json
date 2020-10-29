@@ -1,13 +1,17 @@
 {
   "_id": "##REPLACE_ID##",
-    "type": "pipe",
-    "source": {
-      "type": "binary",
-      "system": "from-master-node",
-      "is_chronological": false,
-      "supports_since": true,
-      "url": "##REPLACE_ID##"
-    },
-    "add_namespaces": false,
-    "remove_namespaces": false
+  "type": "pipe",
+  "source": {
+    "type": "binary",
+    "system": "from-master-node",
+    "is_chronological": false,
+    "supports_since": true,
+    "url": "##REPLACE_ID##"
+  },
+  "add_namespaces": false,
+  "remove_namespaces": false,
+  "metadata": {
+    "reading-from": "##INBOUND_PARENT_PIPE._id##",
+    "used-by": "##OUTBOUND_PARENT_PIPE._id##"
+  }
 }

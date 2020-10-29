@@ -1,8 +1,7 @@
 {
-  "EXTRA_NODE_GIT_REPO": "https://github.com/gabriellsesam/test-multinode-deployment.git",
+  "EXTRA_NODE_GIT_REPO": "<SSH eller HTTP URL>",
   "VAULT_MOUNTING_POINT": "sesam/kv2",
-  "VAULT_URL": "https://vault.test-hafslundnett.io",
+  "VAULT_URL": "https://vault.<organization>.io",
   "watcher-image": "sesam-community/github-autodeployer:2.0.0",
-  "master-endpoint": "https://datahub-fe684e2a.sesam.cloud",
-  "EXTRA_NODE_GIT_USER": "gabriellsesam"
+  "master-endpoint": "https://<node>.sesam.cloud"
 }
