@@ -300,7 +300,6 @@ def main():
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
     LOGGER.info(
         f'Running with options: env: "{env}" | Verify Variables: "{config.VERIFY_VARIABLES}" | Verify Secrets: "{config.VERIFY_SECRETS}" | Dry Run: "{dry_run}"')
-    LOGGER.debug(listdir('template_node_root_folder'))
     master_node = Node(path=path, name=name, whitelist_path=whitelist_filename,
                        verify_vars=verify_variables, verify_secrets=verify_secrets,
                        upload_vars_from_file=variables_filename,
