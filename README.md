@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sesam-community/oracle-transform.svg?branch=master)](https://travis-ci.org/sesam-community/oracle-transform)
+[![Build Status](https://travis-ci.org/sesam-community/sesam-deployer.svg?branch=master)](https://travis-ci.org/sesam-community/sesam-deployer)
 
 # Sesam Auto Deployer
 ## What do i do?
