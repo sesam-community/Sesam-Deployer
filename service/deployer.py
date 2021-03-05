@@ -36,10 +36,11 @@ ENV_VARS = [
     ('DRY_RUN', bool, None),
     ('SLACK_API_TOKEN', str, None),
     ('SLACK_CHANNEL', str, None),
-    ('RELEASE_URL', str, None)
+    ('RELEASE_URL', str, None),
+    ('VAULT_PATH_PREFIX', str, "")
 ]
 
-OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL']
+OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL', 'VAULT_PATH_PREFIX']
 
 missing_vars = []
 
@@ -307,9 +308,15 @@ def main():
     master_node.get_node_info()
     vault = None
     if config.VERIFY_SECRETS is True:
-        vault = Vaulter(url=config.VAULT_URL,
-                        git_token=config.VAULT_GIT_TOKEN,
-                        mount_point=config.VAULT_MOUNTING_POINT)
+        if getattr(config, "VAULT_PATH_PREFIX", None):
+            vault = Vaulter(url=config.VAULT_URL,
+                            git_token=config.VAULT_GIT_TOKEN,
+                            mount_point=config.VAULT_MOUNTING_POINT,
+                            vault_path_prefix=config.VAULT_PATH_PREFIX)
+        else:
+            vault = Vaulter(url=config.VAULT_URL,
+                            git_token=config.VAULT_GIT_TOKEN,
+                            mount_point=config.VAULT_MOUNTING_POINT)
 
     if getenv("EXTRA_NODES", None) is not None and env != 'ci':
         for extra_node in config.EXTRA_NODES:

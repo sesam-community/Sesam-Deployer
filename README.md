@@ -188,6 +188,7 @@ VERIFY_SECRETS=true,
 VAULT_GIT_TOKEN="***",
 VAULT_MOUNTING_POINT="sesam/kv2",
 VAULT_URL="https://vault.<org>.io",
+VAULT_PATH_PREFIX="manual/"
 MASTER_NODE={
   "URL": "datahub-<url>.sesam.cloud",
   "JWT": "***",
