@@ -37,7 +37,7 @@ ENV_VARS = [
     ('SLACK_API_TOKEN', str, None),
     ('SLACK_CHANNEL', str, None),
     ('RELEASE_URL', str, None),
-    ('VAULT_PATH_PREFIX', str, "")
+    ('VAULT_PATH_PREFIX', str, None)
 ]
 
 OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL', 'VAULT_PATH_PREFIX']
