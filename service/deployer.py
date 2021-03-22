@@ -1,9 +1,10 @@
 from difflib import context_diff
+from json import loads as load_json, dumps as dump_json
 from os import getenv, listdir
 from sys import exit
-from requests import session as connection
 from time import sleep
-from json import loads as load_json, dumps as dump_json
+
+from requests import session as connection
 from sesamutils import sesam_logger
 from slack import WebClient
 from slack.errors import SlackApiError
@@ -31,16 +32,19 @@ ENV_VARS = [
       ('VAULT_MOUNTING_POINT', str, None),
       ('VAULT_URL', str, None)]),
     ('VERIFY_VARIABLES', bool, None),
-    ('MASTER_NODE', dict, {"URL": str, "JWT": str, "UPLOAD_VARIABLES": bool, "UPLOAD_SECRETS": bool, "CONFIG_GROUP": str}),
+    ('MASTER_NODE', dict,
+     {"URL": str, "JWT": str, "UPLOAD_VARIABLES": bool, "UPLOAD_SECRETS": bool, "CONFIG_GROUP": str}),
     ('EXTRA_NODES', dict, None),
     ('DRY_RUN', bool, None),
     ('SLACK_API_TOKEN', str, None),
     ('SLACK_CHANNEL', str, None),
     ('RELEASE_URL', str, None),
-    ('VAULT_PATH_PREFIX', str, None)
+    ('VAULT_PATH_PREFIX', str, None),
+    ('VERIFY_VARIABLES_FROM_FILES', list, None)
 ]
 
-OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL', 'VAULT_PATH_PREFIX']
+OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL',
+                     'VAULT_PATH_PREFIX', 'VERIFY_VARIABLES_FROM_FILES']
 
 missing_vars = []
 
@@ -76,16 +80,21 @@ def recursive_set_env_var(triple_tuple_env_var):
 
 
 recursive_set_env_var(ENV_VARS)
-if len(missing_vars) != 0:
-    LOGGER.error(f'Missing variables: {missing_vars}\nExiting.')
-    exit(-1)
 
-env = config.ENVIRONMENT.lower()
-path = config.NODE_FOLDER
+env = getattr(config, 'ENVIRONMENT', '').lower()
+path = getattr(config, 'NODE_FOLDER', None)
 GIT_REPO_BASE_FOLDERS = 'GIT_REPOS'
-verify_variables = config.VERIFY_VARIABLES
-verify_secrets = config.VERIFY_SECRETS
-dry_run = config.DRY_RUN
+verify_variables = getattr(config, 'VERIFY_VARIABLES', None)
+verify_secrets = getattr(config, 'VERIFY_SECRETS', None)
+dry_run = getattr(config, 'DRY_RUN', None)
+
+if len(missing_vars) != 0:
+    if missing_vars == ['MASTER_NODE'] and dry_run and env == 'ci':
+        LOGGER.info('Only verifying config, not talking to any nodes.')
+        pass
+    else:
+        LOGGER.error(f'Missing variables: {missing_vars}\nExiting.')
+        exit(-1)
 
 RETRY_TIMER = 30
 RETRIES = 5
@@ -288,14 +297,15 @@ def main():
     whitelist_filename = None
     name = None
     if env == 'prod' or env == 'test':
-        variables_filename = f'variables/variables-{env}.json'
+        variables_filename = getattr(config, 'VERIFY_VARIABLES_FROM_FILES', f'variables/variables-{env}.json')
         verify_variables_from_files = [variables_filename]
         whitelist_filename = f'deployment/whitelist-{env}.txt'
         name = 'master'
     elif env == 'ci':
         variables_filename = f'test-env.json'
         whitelist_filename = f'deployment/whitelist-master.txt'
-        verify_variables_from_files = ['variables/variables-test.json', 'variables/variables-prod.json']
+        verify_variables_from_files = getattr(config, 'VERIFY_VARIABLES_FROM_FILES',
+                                              ['variables/variables-test.json', 'variables/variables-prod.json'])
         name = None
     else:
         LOGGER.critical(f'Environment "{env}" is not test, prod or test')
