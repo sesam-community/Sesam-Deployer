@@ -40,11 +40,12 @@ ENV_VARS = [
     ('SLACK_CHANNEL', str, None),
     ('RELEASE_URL', str, None),
     ('VAULT_PATH_PREFIX', str, None),
-    ('VERIFY_VARIABLES_FROM_FILES', list, None)
+    ('VERIFY_VARIABLES_FROM_FILES', list, None),
+    ('WHITELIST_FILE_PATH', str, None)
 ]
 
 OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL',
-                     'VAULT_PATH_PREFIX', 'VERIFY_VARIABLES_FROM_FILES']
+                     'VAULT_PATH_PREFIX', 'VERIFY_VARIABLES_FROM_FILES', 'WHITELIST_FILE_PATH']
 
 missing_vars = []
 
@@ -299,11 +300,11 @@ def main():
     if env == 'prod' or env == 'test':
         variables_filename = getattr(config, 'VERIFY_VARIABLES_FROM_FILES', f'variables/variables-{env}.json')
         verify_variables_from_files = [variables_filename]
-        whitelist_filename = f'deployment/whitelist-{env}.txt'
+        whitelist_filename = getattr(config, 'WHITELIST_FILE_PATH', f'deployment/whitelist-{env}.txt')
         name = 'master'
     elif env == 'ci':
         variables_filename = f'test-env.json'
-        whitelist_filename = f'deployment/whitelist-master.txt'
+        whitelist_filename = getattr(config, 'WHITELIST_FILE_PATH', f'deployment/whitelist-master.txt')
         verify_variables_from_files = getattr(config, 'VERIFY_VARIABLES_FROM_FILES',
                                               ['variables/variables-test.json', 'variables/variables-prod.json'])
         name = None
