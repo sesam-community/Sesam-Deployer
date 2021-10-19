@@ -181,6 +181,8 @@ This repo can then be used together with sesam-community/github-autodeployer to 
 
 # Example environment config:
 ```
+UPLOAD_VARIABLES_FROM_FILE=variables/variables-test.json
+VERIFY_VARIABLES_FROM_FILES=['variables/variables-test.json', 'variables/variables-prod.json']
 PYTHONUNBUFFERED=1,
 LOG_LEVEL="DEBUG",
 NODE_FOLDER="template_node_root_folder",
