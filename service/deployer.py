@@ -301,7 +301,7 @@ def main():
     name = None
     if env == 'prod' or env == 'test':
         variables_filename = getattr(config, 'UPLOAD_VARIABLES_FROM_FILE', f'variables/variables-{env}.json')
-        verify_variables_from_files = [variables_filename]
+        verify_variables_from_files = getattr(config, 'VERIFY_VARIABLES_FROM_FILES', [variables_filename])
         whitelist_filename = getattr(config, 'WHITELIST_FILE_PATH', f'deployment/whitelist-{env}.txt')
         name = 'master'
     elif env == 'ci':
