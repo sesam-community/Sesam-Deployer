@@ -187,7 +187,9 @@ PYTHONUNBUFFERED=1,
 LOG_LEVEL="DEBUG",
 NODE_FOLDER="template_node_root_folder",
 VERIFY_SECRETS=true,
-VAULT_GIT_TOKEN="***",
+VAULT_GIT_TOKEN="***-***-***",
+VAULT_APPROLE_ID="***-***-***",
+VAULT_AUTH="git-token",
 VAULT_MOUNTING_POINT="sesam/kv2",
 VAULT_URL="https://vault.<org>.io",
 VAULT_PATH_PREFIX="manual/"
@@ -210,6 +212,12 @@ VERIFY_VARIABLES=true,
 ENVIRONMENT=test,
 "DRY_RUN": true
 ```
+
+Depending on value of VAULT_AUTH, VAULT_TOKEN should hold different relative values.   
+If VAULT_AUTH="git-token" VAULT_TOKEN should hold a developer git-token to authenticate with Vault using github authentication methode.   
+If VAULT_AUTH="approle" VAULT_TOKEN should hold a role_name to authenticate with Vault using approle authentication methode.   
+
+
 ## I want to improve this! What can I do?
  * Add support for pushing straight to the extra node, instead of to a git repo. (not my use case, though it might be later)
  * Add support for keyvault 1 (kv1)
