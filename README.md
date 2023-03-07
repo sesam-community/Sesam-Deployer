@@ -212,11 +212,14 @@ VERIFY_VARIABLES=true,
 ENVIRONMENT=test,
 "DRY_RUN": true
 ```
+Two authentication methodes are supported for Vault, Git token or approle.
+You set it with env variable VAULT_GIT_TOKEN or VAULT_APPROLE_ID. You don't need to set both, but one must be set to use vault (if VERIFY_SECRETS=true). 
+VAULT_AUTH set which one to use. 
+ 
+If VAULT_AUTH="git-token" VAULT_GIT_TOKEN should hold a developer git-token to authenticate with Vault using github authentication methode.   
+If VAULT_AUTH="approle" VAULT_APPROLE_ID should hold an approle-id to authenticate with Vault using approle authentication methode.   
 
-Depending on value of VAULT_AUTH, VAULT_TOKEN should hold different relative values.   
-If VAULT_AUTH="git-token" VAULT_TOKEN should hold a developer git-token to authenticate with Vault using github authentication methode.   
-If VAULT_AUTH="approle" VAULT_TOKEN should hold a role_name to authenticate with Vault using approle authentication methode.   
-
+VAULT_AUTH="git-token" is set as the default value.
 
 ## I want to improve this! What can I do?
  * Add support for pushing straight to the extra node, instead of to a git repo. (not my use case, though it might be later)
