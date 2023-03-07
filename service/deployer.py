@@ -29,6 +29,8 @@ ENV_VARS = [
     ('ENVIRONMENT', str, None),
     ('VERIFY_SECRETS', bool,
      [('VAULT_GIT_TOKEN', str, None),
+      ('VAULT_APPROLE_ID', str, None),
+      ('VAULT_AUTH', str, None),
       ('VAULT_MOUNTING_POINT', str, None),
       ('VAULT_URL', str, None)]),
     ('VERIFY_VARIABLES', bool, None),
@@ -47,7 +49,7 @@ ENV_VARS = [
 
 OPTIONAL_ENV_VARS = ['EXTRA_NODES', 'SLACK_API_TOKEN', 'SLACK_CHANNEL', 'CONFIG_GROUP', 'RELEASE_URL',
                      'VAULT_PATH_PREFIX', 'VERIFY_VARIABLES_FROM_FILES','UPLOAD_VARIABLES_FROM_FILE',
-                     'WHITELIST_FILE_PATH']
+                     'WHITELIST_FILE_PATH', 'VAULT_GIT_TOKEN','VAULT_APPROLE_ID', 'VAULT_AUTH']
 
 missing_vars = []
 
@@ -55,6 +57,7 @@ missing_vars = []
 def recursive_set_env_var(triple_tuple_env_var):
     for var, t, child_required_vars in triple_tuple_env_var:
         curvar = getenv(var, None)
+        LOGGER.debug(f'Try to set {var} to {curvar}')
         if curvar is None:
             if var not in OPTIONAL_ENV_VARS:
                 missing_vars.append(var)
@@ -97,6 +100,13 @@ if len(missing_vars) != 0:
         pass
     else:
         LOGGER.error(f'Missing variables: {missing_vars}\nExiting.')
+        exit(-1)
+
+if getattr(config,"VERIFY_SECRETS"):
+    if (getattr(config, 'VAULT_GIT_TOKEN', False)) or  (getattr(config, 'VAULT_APPROLE_ID',False) and getattr(config, 'VAULT_AUTH',False)=="approle"):
+        pass
+    else:  
+        LOGGER.error(f'When VERIFY_SECRETS=True, VAULT_GIT_TOKEN must be set or VAULT_APPROLE_ID must be set and VAULT_AUTH="approle"')
         exit(-1)
 
 RETRY_TIMER = 30
@@ -320,16 +330,28 @@ def main():
                        verify_vars_from_files=verify_variables_from_files)
     master_node.get_node_info()
     vault = None
-    if config.VERIFY_SECRETS is True:
+    if config.VERIFY_SECRETS is True and config.VAULT_AUTH=="git-token":
         if getattr(config, "VAULT_PATH_PREFIX", None):
             vault = Vaulter(url=config.VAULT_URL,
-                            git_token=config.VAULT_GIT_TOKEN,
+                            token=config.VAULT_GIT_TOKEN,
                             mount_point=config.VAULT_MOUNTING_POINT,
-                            vault_path_prefix=config.VAULT_PATH_PREFIX)
+                            vault_path_prefix=config.VAULT_PATH_PREFIX,auth_type="git-token")
         else:
             vault = Vaulter(url=config.VAULT_URL,
-                            git_token=config.VAULT_GIT_TOKEN,
-                            mount_point=config.VAULT_MOUNTING_POINT)
+                            token=config.VAULT_GIT_TOKEN,
+                            mount_point=config.VAULT_MOUNTING_POINT,auth_type="git-token")
+    
+    if config.VERIFY_SECRETS is True and config.VAULT_AUTH=="approle":
+        if getattr(config, "VAULT_PATH_PREFIX", None):
+            vault = Vaulter(url=config.VAULT_URL,
+                            token=config.VAULT_APPROLE_ID,
+                            mount_point=config.VAULT_MOUNTING_POINT,
+                            vault_path_prefix=config.VAULT_PATH_PREFIX,auth_type="approle")
+        else:
+            vault = Vaulter(url=config.VAULT_URL,
+                            token=config.VAULT_APPROLE_ID,
+                            mount_point=config.VAULT_MOUNTING_POINT,auth_type="approle")
+
 
     if getenv("EXTRA_NODES", None) is not None and env != 'ci':
         for extra_node in config.EXTRA_NODES:

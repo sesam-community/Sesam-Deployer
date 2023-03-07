@@ -6,11 +6,14 @@ from sesamutils import sesam_logger
 
 
 class Vaulter:
-    def __init__(self, url, git_token, mount_point, vault_path_prefix=""):
+    def __init__(self, url, token, mount_point, vault_path_prefix="",auth_type="git-token"):
         self.LOGGER = sesam_logger('KeyVault')
         self.client = Client(url=url)
         self.mount_point = mount_point
-        self.client.auth.github.login(git_token)
+        if auth_type == "git-token":
+            self.client.auth.github.login(token)
+        elif auth_type == "approle":
+            self.client.auth.approle.login(token)
         self.missing_secrets = []
         self.vault_path_prefix = vault_path_prefix
         if not self.client.is_authenticated():
